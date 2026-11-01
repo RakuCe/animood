@@ -498,15 +498,17 @@ async function popularDeviceId() {
     return ("d" + h.toString(16) + "00000000").slice(0, 16);
   }
 }
+const popularQueue = {};
 function reportPopular(id, status, added) {
   if (!POPULAR_API || !id || !["watched", "watching", "want"].includes(status)) return;
-  popularDeviceId().then(did => {
+  const run = () => popularDeviceId().then(did =>
     fetch(POPULAR_API.replace(/\/$/, "") + (added ? "/check" : "/uncheck"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: String(id), status, did })
-    }).catch(() => {});
-  });
+    }).catch(() => {})
+  );
+  popularQueue[id] = (popularQueue[id] || Promise.resolve()).catch(() => {}).then(run);
 }
 function syncExistingPopular() {
   if (!POPULAR_API) return;
@@ -515,7 +517,6 @@ function syncExistingPopular() {
   getFavs().forEach(id => reportPopular(id, getFavStatus(id), true));
   try { localStorage.setItem(key, "1"); } catch {}
 }
-
 const FAV_KEY = "anidiag-favs";
 const FAV_STATUS_KEY = "anidiag-fav-status";
 

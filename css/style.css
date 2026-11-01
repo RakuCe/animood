@@ -948,10 +948,11 @@ html:not([data-theme="dark"]) .official-link:hover {
 
 .empty-box {
   text-align: center; padding: 60px 20px;
-  background: var(--card); border: 1px dashed var(--border); border-radius: 20px;
+  background: var(--card-solid); border: 1px dashed var(--border); border-radius: 20px;
   color: var(--muted);
 }
 .empty-box .empty-icon { font-size: 2.4rem; display: block; margin-bottom: 10px; }
+.empty-box .empty-icon svg { width: 2.4rem; height: 2.4rem; display: block; margin: 0 auto; }
 .empty-box a { font-weight: 700; }
 
 /* =====================================================================
@@ -976,6 +977,8 @@ html:not([data-theme="dark"]) .official-link:hover {
   .scale-btn { width: 40px; height: 40px; }
   .scale-label { width: 60px; font-size: .66rem; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+  .rank-item .card,
+  .rank-item .rank-ph { width: 160px; flex-basis: 160px; }
   #search-input { width: 46vw; }
   .logo span.logo-text { display: none; } /* 狭い画面ではロゴ文字を省略 */
   .title-logo {
