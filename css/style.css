@@ -978,7 +978,11 @@ html:not([data-theme="dark"]) .official-link:hover {
   .scale-label { width: 60px; font-size: .66rem; }
   .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
   .rank-item .card,
-  .rank-item .rank-ph { width: 160px; flex-basis: 160px; }
+  .rank-item .rank-ph {
+    width: calc((100vw - 52px) / 2);
+    flex-basis: calc((100vw - 52px) / 2);
+    max-width: none;
+  }
   #search-input { width: 46vw; }
   .logo span.logo-text { display: none; } /* 狭い画面ではロゴ文字を省略 */
   .title-logo {
