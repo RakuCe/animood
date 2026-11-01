@@ -131,72 +131,73 @@ document.addEventListener("DOMContentLoaded", () => {
   window.setInterval(rotateCards, DISPLAY_TIME + FADE_TIME);
 });
 
+function fillRankPlaceholders(track, n) {
+  track.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const item = document.createElement("div");
+    item.className = "rank-item is-placeholder";
+    item.innerHTML = `<span class="rank-num">${i + 1}</span><article class="card rank-ph" aria-hidden="true"><div class="card-img-wrap"></div><div class="card-body"><div class="card-title">&nbsp;</div></div></article>`;
+    track.appendChild(item);
+  }
+}
+
 function initRankCarousel(root, ids) {
   const track = root.querySelector(".rank-track");
   const prev = root.querySelector(".rank-prev");
   const next = root.querySelector(".rank-next");
   if (!track) return;
+  const valid = (ids || []).map(id => findWork(id)).filter(Boolean).slice(0, 20);
   track.innerHTML = "";
-  ids.slice(0, 20).forEach((id, i) => {
-    const work = findWork(id);
-    if (!work) return;
-    const item = document.createElement("div");
-    item.className = "rank-item";
-    const num = document.createElement("span");
-    num.className = "rank-num";
-    num.textContent = String(i + 1);
-    item.appendChild(num);
-    item.appendChild(createCard(work));
-    track.appendChild(item);
-  });
-  const empty = root.querySelector(".rank-empty");
-  if (empty) empty.hidden = !!track.children.length;
-  root.hidden = false;
-  if (!track.children.length) {
-    if (prev) prev.hidden = true;
-    if (next) next.hidden = true;
-    return;
+  if (!valid.length) {
+    fillRankPlaceholders(track, 5);
+  } else {
+    valid.forEach((work, i) => {
+      const item = document.createElement("div");
+      item.className = "rank-item";
+      const num = document.createElement("span");
+      num.className = "rank-num";
+      num.textContent = String(i + 1);
+      item.appendChild(num);
+      item.appendChild(createCard(work));
+      track.appendChild(item);
+    });
   }
-
+  root.hidden = false;
+  const setArrow = (btn, off) => {
+    if (!btn) return;
+    btn.hidden = false;
+    btn.style.visibility = off ? "hidden" : "visible";
+    btn.style.pointerEvents = off ? "none" : "";
+  };
   const updateArrows = () => {
-    const max = track.scrollWidth - track.clientWidth;
-    if (prev) prev.hidden = track.scrollLeft <= 2;
-    if (next) next.hidden = track.scrollLeft >= max - 2;
+    const max = Math.max(0, track.scrollWidth - track.clientWidth);
+    setArrow(prev, track.scrollLeft <= 2);
+    setArrow(next, track.scrollLeft >= max - 2);
   };
   const items = () => [...track.querySelectorAll(".rank-item")];
-  prev?.addEventListener("click", () => {
+  const snapTo = (left) => {
+    const max = Math.max(0, track.scrollWidth - track.clientWidth);
+    track.scrollTo({ left: Math.max(0, Math.min(max, left)), behavior: "smooth" });
+  };
+  if (prev) prev.onclick = () => {
     const sl = track.scrollLeft;
     let edge = null;
     for (const el of items()) {
       if (el.offsetLeft + el.offsetWidth > sl + 8) { edge = el; break; }
     }
     if (!edge) return;
-    track.scrollTo({ left: Math.max(0, edge.offsetLeft + edge.offsetWidth - track.clientWidth), behavior: "smooth" });
-  });
-  next?.addEventListener("click", () => {
+    snapTo(edge.offsetLeft + edge.offsetWidth - track.clientWidth);
+  };
+  if (next) next.onclick = () => {
     const visRight = track.scrollLeft + track.clientWidth;
     let edge = null;
     for (const el of items()) {
       if (el.offsetLeft < visRight - 8) edge = el;
     }
     if (!edge) return;
-    track.scrollTo({ left: edge.offsetLeft, behavior: "smooth" });
-  });
-  track.addEventListener("scroll", updateArrows, { passive: true });
-  track.addEventListener("wheel", e => { e.preventDefault(); }, { passive: false });
-  let drag = false, startX = 0, startSl = 0;
-  track.addEventListener("pointerdown", e => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    drag = true; startX = e.clientX; startSl = track.scrollLeft;
-    track.setPointerCapture(e.pointerId);
-  });
-  track.addEventListener("pointermove", e => {
-    if (!drag) return;
-    track.scrollLeft = startSl - (e.clientX - startX);
-  });
-  const endDrag = () => { drag = false; };
-  track.addEventListener("pointerup", endDrag);
-  track.addEventListener("pointercancel", endDrag);
+    snapTo(edge.offsetLeft);
+  };
+  track.onscroll = updateArrows;
   requestAnimationFrame(updateArrows);
 }
 
@@ -207,20 +208,20 @@ document.addEventListener("DOMContentLoaded", () => {
     ["rank-watching", "watching"],
     ["rank-want", "want"]
   ];
-  if (!POPULAR_API) {
-    rows.forEach(([id]) => { const el = document.getElementById(id); if (el) el.hidden = true; });
-    return;
-  }
-  const base = POPULAR_API.replace(/\/$/, "");
+  const base = (POPULAR_API || "").replace(/\/$/, "");
   rows.forEach(([elId, status]) => {
     const el = document.getElementById(elId);
     if (!el) return;
+    el.hidden = false;
+    const go = (ids) => initRankCarousel(el, ids);
+    go([]);
+    if (!base) return;
     fetch(base + "/popular?status=" + status + "&limit=20")
       .then(r => r.ok ? r.json() : [])
       .then(data => {
         const ids = (Array.isArray(data) ? data : []).map(x => x.id || x).filter(Boolean);
-        initRankCarousel(el, ids);
+        go(ids);
       })
-      .catch(() => { el.hidden = true; });
+      .catch(() => go([]));
   });
 });

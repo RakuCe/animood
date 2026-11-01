@@ -471,13 +471,42 @@ function initMotionEnhancements() {
 
 const POPULAR_API = "https://animood-popular.haruhi131mj.workers.dev/";
 
+function popularDeviceParts() {
+  const s = screen || {};
+  const n = navigator || {};
+  let tz = "";
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch {}
+  return [
+    n.userAgent || "",
+    n.language || "",
+    n.platform || "",
+    s.width || 0, s.height || 0, s.colorDepth || 0, s.availWidth || 0, s.availHeight || 0,
+    n.hardwareConcurrency || 0,
+    n.maxTouchPoints || 0,
+    n.deviceMemory || 0,
+    tz
+  ].join("|");
+}
+async function popularDeviceId() {
+  const raw = popularDeviceParts();
+  try {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+  } catch {
+    let h = 0;
+    for (let i = 0; i < raw.length; i++) h = (h * 33 + raw.charCodeAt(i)) >>> 0;
+    return ("d" + h.toString(16) + "00000000").slice(0, 16);
+  }
+}
 function reportPopular(id, status, added) {
   if (!POPULAR_API || !id || !["watched", "watching", "want"].includes(status)) return;
-  fetch(POPULAR_API.replace(/\/$/, "") + (added ? "/check" : "/uncheck"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id: String(id), status })
-  }).catch(() => {});
+  popularDeviceId().then(did => {
+    fetch(POPULAR_API.replace(/\/$/, "") + (added ? "/check" : "/uncheck"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: String(id), status, did })
+    }).catch(() => {});
+  });
 }
 function syncExistingPopular() {
   if (!POPULAR_API) return;
@@ -771,13 +800,40 @@ function openPopup(id) {
   requestAnimationFrame(() => backdrop.classList.add("show"));
 
   const modalBody = $(".modal-body", backdrop);
+  const renderCounts = (counts) => {
+    const box = $(".check-counts", backdrop);
+    if (!box) return;
+    const meta = [
+      ["watched", FAV_STATUS_META.watched],
+      ["watching", FAV_STATUS_META.watching],
+      ["want", FAV_STATUS_META.want]
+    ];
+    box.innerHTML = meta.map(([k, m]) =>
+      `<span class="check-count ${m.className}">${m.icon}<b>${counts[k] || 0}</b></span>`
+    ).join("");
+  };
   const updatePopupStatus = () => {
-    const existing = $(".modal-status-control", backdrop);
+    const existing = $(".modal-status-row", backdrop);
     if (existing) existing.remove();
     if (modalBody) {
+      const row = document.createElement("div");
+      row.className = "modal-status-row";
       const control = createFavStatusControl(work.id, updatePopupStatus);
       control.classList.add("modal-status-control");
-      modalBody.insertBefore(control, modalBody.querySelector(".param-box"));
+      const counts = document.createElement("div");
+      counts.className = "check-counts";
+      counts.setAttribute("aria-label", "チェック数");
+      row.appendChild(control);
+      row.appendChild(counts);
+      modalBody.insertBefore(row, modalBody.querySelector(".param-box"));
+      renderCounts({ watched: 0, watching: 0, want: 0 });
+      const base = (POPULAR_API || "").replace(/\/$/, "");
+      if (base) {
+        fetch(base + "/counts?id=" + encodeURIComponent(work.id))
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d) renderCounts(d); })
+          .catch(() => {});
+      }
     }
     const imgWrap = $(".modal-img-wrap", backdrop);
     const oldMark = $(".fav-status-mark", imgWrap);
