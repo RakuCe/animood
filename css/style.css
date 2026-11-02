@@ -979,8 +979,8 @@ html:not([data-theme="dark"]) .official-link:hover {
   .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
   .rank-item .card,
   .rank-item .rank-ph {
-    width: calc((100vw - 52px) / 2);
-    flex-basis: calc((100vw - 52px) / 2);
+    width: auto;
+    flex-basis: auto;
     max-width: none;
   }
   #search-input { width: 46vw; }
@@ -3726,8 +3726,11 @@ body[data-page="list"] #season-filter {
 }
 
 body[data-page="home"] .rank-row {
-  margin: 8px 0 40px;
+  margin: 8px calc(50% - 50vw) 40px;
+  width: 100vw;
+  padding: 0 20px;
   min-height: 300px;
+  box-sizing: border-box;
 }
 .rank-wrap { position: relative; display: flex; align-items: center; }
 .rank-track {
@@ -3776,9 +3779,9 @@ body[data-page="home"] .rank-row {
 .rank-prev, .rank-next {
   position: absolute;
   z-index: 3;
-  top: 50%;
+  top: 42%;
   transform: translateY(-50%);
-  width: 68px; height: 68px;
+  width: 80px; height: 84px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -3792,7 +3795,7 @@ body[data-page="home"] .rank-row {
 .rank-prev { left: 0; }
 .rank-next { right: 0; }
 .rank-prev::before, .rank-next::before {
-  font-size: 2.85rem;
+  font-size: 3.25rem;
   font-weight: 700;
   line-height: 1;
   pointer-events: none;

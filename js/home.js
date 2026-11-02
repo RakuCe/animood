@@ -131,6 +131,10 @@ document.addEventListener("DOMContentLoaded", () => {
   window.setInterval(rotateCards, DISPLAY_TIME + FADE_TIME);
 });
 
+function rankPageSize() {
+  return window.matchMedia("(max-width: 720px)").matches ? 2 : 4;
+}
+
 function fillRankPlaceholders(track, n) {
   track.innerHTML = "";
   for (let i = 0; i < n; i++) {
@@ -141,6 +145,26 @@ function fillRankPlaceholders(track, n) {
   }
 }
 
+function layoutRankTrack(track) {
+  const n = rankPageSize();
+  const gap = 16;
+  const w = track.clientWidth;
+  if (!w) return 0;
+  const itemW = (w - gap * (n - 1)) / n;
+  track.style.gap = gap + "px";
+  track.querySelectorAll(".rank-item").forEach(el => {
+    el.style.flex = "0 0 " + itemW + "px";
+    el.style.width = itemW + "px";
+    const card = el.querySelector(".card");
+    if (card) {
+      card.style.width = "auto";
+      card.style.flex = "1 1 auto";
+      card.style.minWidth = "0";
+    }
+  });
+  return itemW + gap;
+}
+
 function initRankCarousel(root, ids) {
   const track = root.querySelector(".rank-track");
   const prev = root.querySelector(".rank-prev");
@@ -149,7 +173,7 @@ function initRankCarousel(root, ids) {
   const valid = (ids || []).map(id => findWork(id)).filter(Boolean).slice(0, 20);
   track.innerHTML = "";
   if (!valid.length) {
-    fillRankPlaceholders(track, 5);
+    fillRankPlaceholders(track, rankPageSize());
   } else {
     valid.forEach((work, i) => {
       const item = document.createElement("div");
@@ -163,6 +187,7 @@ function initRankCarousel(root, ids) {
     });
   }
   root.hidden = false;
+  let step = 0;
   const setArrow = (btn, off) => {
     if (!btn) return;
     btn.hidden = false;
@@ -174,31 +199,27 @@ function initRankCarousel(root, ids) {
     setArrow(prev, track.scrollLeft <= 2);
     setArrow(next, track.scrollLeft >= max - 2);
   };
-  const items = () => [...track.querySelectorAll(".rank-item")];
   const snapTo = (left) => {
     const max = Math.max(0, track.scrollWidth - track.clientWidth);
     track.scrollTo({ left: Math.max(0, Math.min(max, left)), behavior: "smooth" });
   };
+  const relayout = () => {
+    step = layoutRankTrack(track);
+    updateArrows();
+  };
   if (prev) prev.onclick = () => {
-    const sl = track.scrollLeft;
-    let edge = null;
-    for (const el of items()) {
-      if (el.offsetLeft + el.offsetWidth > sl + 8) { edge = el; break; }
-    }
-    if (!edge) return;
-    snapTo(edge.offsetLeft + edge.offsetWidth - track.clientWidth);
+    const n = rankPageSize();
+    snapTo(track.scrollLeft - step * n);
   };
   if (next) next.onclick = () => {
-    const visRight = track.scrollLeft + track.clientWidth;
-    let edge = null;
-    for (const el of items()) {
-      if (el.offsetLeft < visRight - 8) edge = el;
-    }
-    if (!edge) return;
-    snapTo(edge.offsetLeft);
+    const n = rankPageSize();
+    snapTo(track.scrollLeft + step * n);
   };
   track.onscroll = updateArrows;
-  requestAnimationFrame(updateArrows);
+  if (track._rankRo) track._rankRo.disconnect();
+  track._rankRo = new ResizeObserver(relayout);
+  track._rankRo.observe(track);
+  requestAnimationFrame(relayout);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
