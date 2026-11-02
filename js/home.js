@@ -135,6 +135,16 @@ function rankPageSize() {
   return window.matchMedia("(max-width: 720px)").matches ? 2 : 4;
 }
 
+function listCardWidth() {
+  const mobile = window.matchMedia("(max-width: 720px)").matches;
+  const min = mobile ? 160 : 250;
+  const gap = mobile ? 12 : 20;
+  const pad = 40;
+  const inner = Math.min(1080, window.innerWidth) - pad;
+  const n = Math.max(1, Math.floor((inner + gap) / (min + gap)));
+  return (inner - (n - 1) * gap) / n;
+}
+
 function fillRankPlaceholders(track, n) {
   track.innerHTML = "";
   for (let i = 0; i < n; i++) {
@@ -145,24 +155,42 @@ function fillRankPlaceholders(track, n) {
   }
 }
 
-function layoutRankTrack(track) {
-  const n = rankPageSize();
-  const gap = 16;
-  const w = track.clientWidth;
-  if (!w) return 0;
-  const itemW = (w - gap * (n - 1)) / n;
-  track.style.gap = gap + "px";
+function layoutRankTrack(track, root) {
+  const cardW = listCardWidth();
+  const itemGap = window.matchMedia("(max-width: 720px)").matches ? 12 : 20;
+  const numW = 26;
+  const innerGap = 2;
+  const itemW = numW + innerGap + cardW;
+  if (root) {
+    root.style.width = "";
+    root.style.maxWidth = "";
+    root.style.marginLeft = "";
+    root.style.marginRight = "";
+    root.style.paddingLeft = "";
+    root.style.paddingRight = "";
+  }
+  track.style.gap = itemGap + "px";
   track.querySelectorAll(".rank-item").forEach(el => {
     el.style.flex = "0 0 " + itemW + "px";
     el.style.width = itemW + "px";
+    el.style.gap = innerGap + "px";
+    const num = el.querySelector(".rank-num");
+    if (num) {
+      num.style.minWidth = numW + "px";
+      num.style.width = numW + "px";
+      num.style.textAlign = "right";
+      num.style.boxSizing = "border-box";
+      const two = Number(num.textContent) >= 10;
+      num.style.transform = two ? "translateX(-1ch)" : "none";
+    }
     const card = el.querySelector(".card");
     if (card) {
-      card.style.width = "auto";
-      card.style.flex = "1 1 auto";
-      card.style.minWidth = "0";
+      card.style.width = cardW + "px";
+      card.style.flex = "0 0 " + cardW + "px";
+      card.style.minWidth = cardW + "px";
     }
   });
-  return itemW + gap;
+  return itemW + itemGap;
 }
 
 function initRankCarousel(root, ids) {
@@ -187,7 +215,8 @@ function initRankCarousel(root, ids) {
     });
   }
   root.hidden = false;
-  let step = 0;
+  let locked = false;
+  const items = () => [...track.querySelectorAll(".rank-item")];
   const setArrow = (btn, off) => {
     if (!btn) return;
     btn.hidden = false;
@@ -201,21 +230,35 @@ function initRankCarousel(root, ids) {
   };
   const snapTo = (left) => {
     const max = Math.max(0, track.scrollWidth - track.clientWidth);
+    locked = true;
     track.scrollTo({ left: Math.max(0, Math.min(max, left)), behavior: "smooth" });
+    window.setTimeout(() => { locked = false; updateArrows(); }, 450);
   };
   const relayout = () => {
-    step = layoutRankTrack(track);
+    layoutRankTrack(track, root);
     updateArrows();
   };
   if (prev) prev.onclick = () => {
-    const n = rankPageSize();
-    snapTo(track.scrollLeft - step * n);
+    if (locked) return;
+    const sl = track.scrollLeft;
+    let edge = null;
+    for (const el of items()) {
+      if (el.offsetLeft + el.offsetWidth > sl + 8) { edge = el; break; }
+    }
+    if (!edge) return;
+    snapTo(edge.offsetLeft + edge.offsetWidth - track.clientWidth);
   };
   if (next) next.onclick = () => {
-    const n = rankPageSize();
-    snapTo(track.scrollLeft + step * n);
+    if (locked) return;
+    const visRight = track.scrollLeft + track.clientWidth;
+    let edge = null;
+    for (const el of items()) {
+      if (el.offsetLeft < visRight - 8) edge = el;
+    }
+    if (!edge) return;
+    snapTo(edge.offsetLeft);
   };
-  track.onscroll = updateArrows;
+  track.addEventListener("scrollend", () => { locked = false; updateArrows(); });
   if (track._rankRo) track._rankRo.disconnect();
   track._rankRo = new ResizeObserver(relayout);
   track._rankRo.observe(track);

@@ -2720,7 +2720,7 @@ body[data-page="home"] .visual-work-card .visual-img-next {
   border-color: rgba(255,255,255,.24);
 }
 
-/* ---------- 作品説明文：文章の区切りで自然に改行 ---------- */
+/* ---------- 作品説明文：文章の区切りで改行 ---------- */
 .modal-desc {
   line-height: 1.95;
   overflow-wrap: anywhere;
@@ -3026,10 +3026,6 @@ body[data-page="home"] .visual-work-card .visual-img-next {
 }
 
 
-/* =====================================================================
- * v33 追加調整
- * ===================================================================== */
-/* メニュー：5番目の「ランダム作品」も順番に出現 */
 .drawer.open .drawer-link:nth-of-type(5) { animation-delay: .32s; }
 
 /* スマホ：5段階ボタンを少し大きくし、間隔を広げる */
@@ -3147,7 +3143,7 @@ body[data-page="home"] .visual-work-card .visual-img-next {
 
 @media (max-width: 720px) {
   /* スマホの診断プログレスバーは固定ではなくstickyにして、fixed+合成レイヤー問題を避ける。
-     さらにSafari系でsticky+backdrop-filterが描画されない事象があるため、
+    さらにSafari系でsticky+backdrop-filterが描画されない事象があるため、
      スマホではぼかしを外して実色背景＋独立レイヤー化で確実に表示する */
   body[data-page="quiz"] .progress-wrap {
     position: sticky !important;
@@ -3178,8 +3174,7 @@ body[data-page="home"] .visual-work-card .visual-img-next {
     opacity: 1 !important;
   }
 
-  /* ダークモードでも現在ページの背景を明示
-     (タッチ操作で:hoverが残ると背景がhover色に上書きされて消えるため) */
+  /* ダークモードでも現在ページの背景を明示(タッチ操作で:hoverが残ると背景がhover色に上書きされて消えるため) */
   [data-theme="dark"] .drawer-link.current,
   [data-theme="dark"] .drawer-link.current:hover {
     background-color: #6C63FF !important;
@@ -3221,7 +3216,6 @@ body[data-page="home"] .visual-work-card .visual-img-next {
   stroke-linejoin: round;
 }
 
-/* 1024px以下：ヘッダーぼかしを ::before レイヤーに分離（Safari合成対策） */
 @media (max-width: 1024px) {
   .site-header {
     background: transparent;
@@ -3241,7 +3235,6 @@ body[data-page="home"] .visual-work-card .visual-img-next {
     transform: translateZ(0);
     pointer-events: none;
   }
-  /* テーマ切替時の色変化だけ従来どおりなめらかに */
   html.theme-transition .site-header::before {
     transition: background-color .3s ease;
   }
@@ -3296,7 +3289,7 @@ body[data-page="quiz"] .drawer {
 
 
 
-/* ---------- 診断CTA：外側だけごく狭い淡い光 ---------- */
+/* 診断CTA：外側だけごく狭い淡い光 */
 body[data-page="quiz"] .result-actions .btn-grad,
 body[data-page="home"] .hero a.btn-grad,
 body[data-page="quiz"] #diagnose-btn.btn-grad,
@@ -3489,10 +3482,6 @@ strong, b,
   background: none;
 }
 
-
-
-
-/* ---------- v69：v67基準。ロゴ少し大／箱を広げ見切れ防止／？中心で左下に小カード、右下は少し上 ---------- */
 body[data-page="home"] .hero {
   height: calc(100svh - 68px);
   min-height: calc(100svh - 68px);
@@ -3541,12 +3530,11 @@ body[data-page="home"] .hero-visual {
 body[data-page="home"] .visual-work-cards {
   overflow: visible;
 }
-/* 右下カード：追加カードより少し上 */
+
 body[data-page="home"] .visual-card-c {
   right: 8%;
   bottom: 22%;
 }
-/* ？を中心に見た左下＝診断ボタンの高さ。少し小さめ */
 body[data-page="home"] .visual-work-card {
   width: clamp(138px, 22vw, 228px);
 }
@@ -3726,11 +3714,18 @@ body[data-page="list"] #season-filter {
 }
 
 body[data-page="home"] .rank-row {
-  margin: 8px calc(50% - 50vw) 40px;
-  width: 100vw;
-  padding: 0 20px;
+  margin: 8px -233px 40px;
+  width: auto;
+  padding: 0;
   min-height: 300px;
   box-sizing: border-box;
+}
+@media (max-width: 720px) {
+  body[data-page="home"] .rank-row {
+    margin-left: 0;
+    margin-right: 0;
+    width: auto;
+  }
 }
 .rank-wrap { position: relative; display: flex; align-items: center; }
 .rank-track {
@@ -3756,7 +3751,7 @@ body[data-page="home"] .rank-row {
   flex: 0 0 auto;
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 2px;
 }
 .rank-item .card,
 .rank-item .rank-ph {
@@ -3773,7 +3768,11 @@ body[data-page="home"] .rank-row {
   font-size: 2rem;
   line-height: 1.1;
   padding-top: 8px;
-  min-width: 1.6em;
+  min-width: 1.4em;
+  width: 1.4em;
+  padding-right: 0;
+  text-align: right;
+  box-sizing: border-box;
   color: var(--text);
 }
 .rank-prev, .rank-next {
