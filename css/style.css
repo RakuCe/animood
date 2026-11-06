@@ -697,8 +697,9 @@ html.theme-transition .theme-icon {
   display: block; width: 100%; min-height: 28px;
   padding: 10px 0;
   background: var(--header-bg);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border-bottom: 1px solid var(--border);
 }
 .progress-inner { max-width: 720px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 12px; }
@@ -1561,7 +1562,8 @@ body[data-page="home"] .step-card {
  * ===================================================================== */
 
 /* ---------- ヘッダー：背後を強めにぼかす ---------- */
-.site-header {
+.site-header,
+.progress-wrap {
   background: var(--header-bg);
   -webkit-backdrop-filter: blur(24px);
   backdrop-filter: blur(24px);
@@ -3156,11 +3158,22 @@ body[data-page="home"] .visual-work-card .visual-img-next {
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
-    transform: translateZ(0) !important;
-    background: var(--card-solid) !important;
+    background: transparent !important;
     -webkit-backdrop-filter: none !important;
     backdrop-filter: none !important;
     isolation: isolate;
+  }
+  body[data-page="quiz"] .progress-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--header-bg);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    pointer-events: none;
   }
   body[data-page="quiz"] .progress-inner {
     min-height: 28px;
@@ -3318,6 +3331,7 @@ body[data-page="random"] #random-refresh.btn-grad,
   transition: background-color .2s ease, color .2s ease, outline-color .2s ease;
 }
 body[data-page="home"] .hero a.btn-grad::before,
+body[data-page="quiz"] .result-actions .btn-grad::before,
 body[data-page="quiz"] #diagnose-btn.btn-grad::before,
 body[data-page="random"] #random-refresh.btn-grad::before,
 .hero .btn-grad::before,
@@ -3333,6 +3347,7 @@ body[data-page="random"] #random-refresh.btn-grad::before,
   box-shadow: 0 0 10px 0 rgba(34, 211, 238, .6);
 }
 body[data-page="home"] .hero a.btn-grad::after,
+body[data-page="quiz"] .result-actions .btn-grad::after,
 body[data-page="quiz"] #diagnose-btn.btn-grad::after,
 body[data-page="random"] #random-refresh.btn-grad::after,
 .hero .btn-grad::after,
@@ -3343,6 +3358,7 @@ body[data-page="random"] #random-refresh.btn-grad::after,
   animation: none !important;
 }
 html:not([data-theme="dark"]) body[data-page="home"] .hero a.btn-grad:hover,
+html:not([data-theme="dark"]) body[data-page="quiz"] .result-actions .btn-grad:hover,
 html:not([data-theme="dark"]) body[data-page="quiz"] #diagnose-btn.btn-grad:hover:not(:disabled),
 html:not([data-theme="dark"]) body[data-page="random"] #random-refresh.btn-grad:hover {
   background: #fdfdfe;
@@ -3352,6 +3368,7 @@ html:not([data-theme="dark"]) body[data-page="random"] #random-refresh.btn-grad:
   transform: none;
 }
 [data-theme="dark"] body[data-page="home"] .hero a.btn-grad,
+[data-theme="dark"] body[data-page="quiz"] .result-actions .btn-grad,
 [data-theme="dark"] body[data-page="quiz"] #diagnose-btn.btn-grad,
 [data-theme="dark"] body[data-page="random"] #random-refresh.btn-grad {
   color: #efecf9;
@@ -3359,6 +3376,7 @@ html:not([data-theme="dark"]) body[data-page="random"] #random-refresh.btn-grad:
   box-shadow: none;
 }
 [data-theme="dark"] body[data-page="home"] .hero a.btn-grad:hover,
+[data-theme="dark"] body[data-page="quiz"] .result-actions .btn-grad:hover,
 [data-theme="dark"] body[data-page="quiz"] #diagnose-btn.btn-grad:hover:not(:disabled),
 [data-theme="dark"] body[data-page="random"] #random-refresh.btn-grad:hover {
   background: #111111;

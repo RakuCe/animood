@@ -469,7 +469,7 @@ function initMotionEnhancements() {
   }
 }
 
-const POPULAR_API = "https://animood-popular.haruhi131mj.workers.dev/";
+const POPULAR_API = "https://animood-popular.rakuc.workers.dev";
 
 function popularDeviceParts() {
   const s = screen || {};
@@ -499,8 +499,27 @@ async function popularDeviceId() {
   }
 }
 const popularQueue = {};
+const VOTE_KEY = "animood-votes";
+function getVotes() {
+  try { return JSON.parse(localStorage.getItem(VOTE_KEY) || "{}"); }
+  catch { return {}; }
+}
+function setVotes(v) {
+  try { localStorage.setItem(VOTE_KEY, JSON.stringify(v)); } catch {}
+}
 function reportPopular(id, status, added) {
   if (!POPULAR_API || !id || !["watched", "watching", "want"].includes(status)) return;
+  const votes = getVotes();
+  const k = status + ":" + id;
+  if (added) {
+    if (votes[k]) return;
+    ["watched", "watching", "want"].forEach(st => { if (st !== status) delete votes[st + ":" + id]; });
+    votes[k] = 1;
+  } else {
+    if (!votes[k]) return;
+    delete votes[k];
+  }
+  setVotes(votes);
   const run = () => popularDeviceId().then(did =>
     fetch(POPULAR_API.replace(/\/$/, "") + (added ? "/check" : "/uncheck"), {
       method: "POST",
@@ -537,6 +556,7 @@ function setFavStatus(id, status) {
   if (!["watched", "watching", "want"].includes(status)) return;
   const statuses = getFavStatuses();
   const prev = ["watched", "watching", "want"].includes(statuses[id]) ? statuses[id] : (isFav(id) ? "watched" : null);
+  if (prev === status && isFav(id)) return;
   statuses[id] = status;
   localStorage.setItem(FAV_STATUS_KEY, JSON.stringify(statuses));
   syncFavButtons();
@@ -550,6 +570,8 @@ function toggleFav(id) {
   const was = favs.includes(id);
   if (was) {
     const st = getFavStatus(id);
+    const votes = getVotes();
+    if (!votes[st + ":" + id] && !was) return;
     favs = favs.filter(f => f !== id);
     localStorage.setItem(FAV_KEY, JSON.stringify(favs));
     reportPopular(id, st, false);
@@ -718,11 +740,13 @@ function createFavStatusControl(id, onChange) {
       e.stopPropagation();
       const status = button.dataset.status;
       if (status === "remove") {
-        if (isFav(id)) toggleFav(id);
+        if (!isFav(id)) return;
+        toggleFav(id);
         update();
         if (typeof onChange === "function") onChange();
         return;
       }
+      if (isFav(id) && getFavStatus(id) === status) return;
       if (!isFav(id)) {
         let favs = getFavs();
         favs = [...favs, id];
@@ -801,6 +825,8 @@ function openPopup(id) {
   requestAnimationFrame(() => backdrop.classList.add("show"));
 
   const modalBody = $(".modal-body", backdrop);
+  let popupCounts = { watched: 0, watching: 0, want: 0 };
+  let lastCheck = isFav(work.id) ? getFavStatus(work.id) : null;
   const renderCounts = (counts) => {
     const box = $(".check-counts", backdrop);
     if (!box) return;
@@ -813,13 +839,23 @@ function openPopup(id) {
       `<span class="check-count ${m.className}">${m.icon}<b>${counts[k] || 0}</b></span>`
     ).join("");
   };
+  const onPopupCheck = () => {
+    const now = isFav(work.id) ? getFavStatus(work.id) : null;
+    if (now !== lastCheck) {
+      if (lastCheck) popupCounts[lastCheck] = Math.max(0, (popupCounts[lastCheck] || 0) - 1);
+      if (now) popupCounts[now] = (popupCounts[now] || 0) + 1;
+      lastCheck = now;
+      renderCounts(popupCounts);
+    }
+    updatePopupStatus();
+  };
   const updatePopupStatus = () => {
     const existing = $(".modal-status-row", backdrop);
     if (existing) existing.remove();
     if (modalBody) {
       const row = document.createElement("div");
       row.className = "modal-status-row";
-      const control = createFavStatusControl(work.id, updatePopupStatus);
+      const control = createFavStatusControl(work.id, onPopupCheck);
       control.classList.add("modal-status-control");
       const counts = document.createElement("div");
       counts.className = "check-counts";
@@ -827,14 +863,7 @@ function openPopup(id) {
       row.appendChild(control);
       row.appendChild(counts);
       modalBody.insertBefore(row, modalBody.querySelector(".param-box"));
-      renderCounts({ watched: 0, watching: 0, want: 0 });
-      const base = (POPULAR_API || "").replace(/\/$/, "");
-      if (base) {
-        fetch(base + "/counts?id=" + encodeURIComponent(work.id))
-          .then(r => r.ok ? r.json() : null)
-          .then(d => { if (d) renderCounts(d); })
-          .catch(() => {});
-      }
+      renderCounts(popupCounts);
     }
     const imgWrap = $(".modal-img-wrap", backdrop);
     const oldMark = $(".fav-status-mark", imgWrap);
@@ -844,12 +873,20 @@ function openPopup(id) {
       const mark = $(".fav-status-mark", imgWrap);
       mark.addEventListener("click", e => {
         e.stopPropagation();
+        if (!isFav(work.id)) return;
         toggleFav(work.id);
-        updatePopupStatus();
+        onPopupCheck();
       });
     }
   };
   updatePopupStatus();
+  const base = (POPULAR_API || "").replace(/\/$/, "");
+  if (base) {
+    fetch(base + "/counts?id=" + encodeURIComponent(work.id))
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d) { popupCounts = d; renderCounts(popupCounts); } })
+      .catch(() => {});
+  }
   loadAniListInfo(work, backdrop);
   initFilterChipEvents(backdrop);
   $(".modal-close", backdrop).addEventListener("click", closePopup);
